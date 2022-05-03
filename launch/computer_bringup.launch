@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- Start darknet -->
+  <include file="$(find darknet_ros)/launch/darknet_ros.launch" />
+
+  <!-- Start rviz -->
+  <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find fetch_navigation)/config/navigation.rviz" /-->
+
+</launch>
