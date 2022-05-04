@@ -41,6 +41,7 @@ class Robot():
 
     def getDetectionImage(self):
         return self.yoloDetector.detection_image
+    
 
 if __name__ == '__main__':
     rospy.init_node("robot")

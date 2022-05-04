@@ -42,7 +42,7 @@ class HeadControl(object):
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 
-    def move_head(self, pan_pos, tilt_pos, time=rospy.Time(1.0)):
+    def move_head(self, pan_pos, tilt_pos, time=rospy.Time(1.0), blocking=True):
         # fill ROS message
         goal = control_msgs.msg.FollowJointTrajectoryGoal()
         traj = trajectory_msgs.msg.JointTrajectory()
@@ -53,15 +53,14 @@ class HeadControl(object):
         p.time_from_start = time
         traj.points = [p]
         goal.trajectory = traj
-        # send message to the action server
         self.cli_head.send_goal(goal)
-        # wait for the action server to complete the order
-        #self.cli_head.wait_for_result()
+        if blocking:
+            self.cli_head.wait_for_result()
         rospy.sleep(1)
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 
-    def look_at(self, x, y, z, duration=1.0):
+    def look_at(self, x, y, z, duration=1.0, blocking=True):
         goal = PointHeadGoal()
         goal.target.header.stamp = rospy.Time.now()
         goal.target.header.frame_id = "base_link"
@@ -70,7 +69,8 @@ class HeadControl(object):
         goal.target.point.z = z
         goal.min_duration = rospy.Duration(duration)
         self.cli_head_cart.send_goal(goal)
-        self.cli_head_cart.wait_for_result()
+        if blocking:
+            self.cli_head_cart.wait_for_result()
 
     def move_down_center(self, offset=0.5):
         self.get_pose()
@@ -128,9 +128,7 @@ class HeadControl(object):
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 
     def get_pose(self):
-        # print(self.robot.get_current_state())
         self.actual_positions = self.robot.get_current_state().joint_state.position[4:6]
-        # print(self.actual_positions)
         return self.actual_positions
 
     # def __del__(self):

@@ -35,7 +35,7 @@ class TorsoControl(object):
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 
-    def move_to(self, position, duration=5.0): # position between 0 and 0.4
+    def move_to(self, position, duration=5.0, blocking=True): # position between 0 and 0.4
         if len(self.joint_names) != 1:
             print("Invalid trajectory position")
             return False
@@ -50,7 +50,8 @@ class TorsoControl(object):
         follow_goal.trajectory = trajectory
 
         self.client.send_goal(follow_goal)
-        #self.client.wait_for_result()
+        if blocking:
+            self.client.wait_for_result()
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 

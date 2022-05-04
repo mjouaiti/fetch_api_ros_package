@@ -28,10 +28,6 @@ except error:
 
 
 class ArmControl(object):
-    # # class static varaible
-    # torso = TorsoControl()
-    # head = HeadControl()
-    # gripper = GripperControl()
 
     """ Move arm """
 
@@ -71,10 +67,10 @@ class ArmControl(object):
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 
-    def move_joint_positions(self, positions):
+    def move_joint_positions(self, positions, blocking=True):
         self.pause[0] = False
         while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, positions, 0.02)
+            result = self.move_group.moveToJointPosition(self.joint_names, positions, 0.02, wait=blocking, {max_velocity_scaling_factor:0.5})
             if s:
                 s.send(",".join([str(d) for d in list(self.get_pose())]))
             if result.error_code.val == MoveItErrorCodes.SUCCESS:
@@ -82,48 +78,17 @@ class ArmControl(object):
                 return
 
 
-    def move_joint_position(self, joint_name, position):
+    def move_joint_position(self, joint_name, position, blocking=True):
         self.pause[0] = False
         positions = list(self.get_pose())
         positions[self.joint_names.index(joint_name)] = position
         while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, positions, 0.02)
+            result = self.move_group.moveToJointPosition(self.joint_names, positions, 0.02, wait=blocking, {max_velocity_scaling_factor:0.5})
             if s:
                 s.send(",".join([str(d) for d in list(self.get_pose())]))
             if result.error_code.val == MoveItErrorCodes.SUCCESS:
                 self.pause[0] = True
                 return
-
-    def move_cartesian_position_speed(self, position, speed, orientation=[0.0, 0.0, 0.0]):
-        ''' position: xyz
-            orientation: rpy'''
-
-        self.pause[0] = False
-        motion_plan_request = MotionPlanRequest()
-        motion_plan_request.group_name = "arm"
-        motion_plan_request.num_planning_attempts = 2
-        motion_plan_request.allowed_planning_time = rospy.Duration(5.0)
-        motion_plan_request.max_velocity_scaling_factor = 4.
-        motion_plan_request.planner_id = ""
-        # _goal.motion_plan_request = motion_plan_request
-
-        pose_target = Pose()
-        pose_target.position.x = position[0]
-        pose_target.position.y = position[1]
-        pose_target.position.z = position[2]
-        pose_target.orientation.w = quaternion[3]
-        pose_target.orientation.x = quaternion[0]
-        pose_target.orientation.y = quaternion[1]
-        pose_target.orientation.z = quaternion[2]
-
-
-        self.arm_group.set_start_state(self.robot.get_current_state())
-
-        _ = SimpleActionState.execute(self, userdata)
-
-        self.pause[0] = True
-        if s:
-            s.send(",".join([str(d) for d in list(self.get_pose())]))
 
     def move_cartesian_position(self, position, orientation=[0.0, 0.0, 0.0]):
         ''' position: xyz
@@ -174,48 +139,23 @@ class ArmControl(object):
 
     def tuck(self): # local method
         self.pause[0] = False
-        # gripper.open()
-        # head.move_home()
-        while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, [1.32, 1.40, -0.2, 1.72, 0.0, 1.66, 0.0],
-                                                         0.02)
-            if s:
-                s.send(",".join([str(d) for d in list(self.get_pose())]))
-            if result.error_code.val == MoveItErrorCodes.SUCCESS:
-                self.pause[0] = True
-                return
+        move_joint_positions([1.32, 1.40, -0.2, 1.72, 0.0, 1.66, 0.0])
+        self.pause[0] = True
 
     def zero(self):
         self.pause[0] = False
-        while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.02)
-            if s:
-                s.send(",".join([str(d) for d in list(self.get_pose())]))
-            if result.error_code.val == MoveItErrorCodes.SUCCESS:
-                self.pause[0] = True
-                return
+        move_joint_positions(self.joint_names, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.pause[0] = True
 
     def stow(self):
         self.pause[0] = False
-        while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, [1.32, 0.7, 0.0, -2.0, 0.0, -0.57, 0.0],
-                                                         0.02)
-            if s:
-                s.send(",".join([str(d) for d in list(self.get_pose())]))
-            if result.error_code.val == MoveItErrorCodes.SUCCESS:
-                self.pause[0] = True
-                return
+        move_joint_positions([1.32, 0.7, 0.0, -2.0, 0.0, -0.57, 0.0])
+        self.pause[0] = True
 
     def intermediate_stow(self):
         self.pause[0] = False
-        while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, [0.7, -0.3, 0.0, -0.3, 0.0, -0.57, 0.0],
-                                                         0.02)
-            if s:
-                s.send(",".join([str(d) for d in list(self.get_pose())]))
-            if result.error_code.val == MoveItErrorCodes.SUCCESS:
-                self.pause[0] = True
-                return
+        move_joint_positions(self.joint_names, [0.7, -0.3, 0.0, -0.3, 0.0, -0.57, 0.0])
+        self.pause[0] = True
 
     def get_pose(self):
         self.actual_positions = self.robot.get_current_state().joint_state.position[6:13]
