@@ -100,6 +100,7 @@ class YoloDetector():
             return None,None,None
 
     def get_item_3d_coordinates(self,i_name, rgb_img):
+        c, u = [], []
         for k, [item_name, box] in enumerate(zip(self.class_names, self.boxes)):
             if not (i_name==item_name):
                 continue
@@ -109,9 +110,9 @@ class YoloDetector():
             object_loc = np.argwhere(mask[:,:,0] > 0)
             w, h = box[2] - box[0], box[3] - box[1]
             for pix in object_loc:
-                c = self._2dto3d.pixelTo3DPoint(pix[1], pix[0])
-                if c:
-                    pc.append(c)
+                _c = self._2dto3d.pixelTo3DPoint(pix[1], pix[0])
+                if _c:
+                    pc.append(_c)
             pc = np.array(pc)
             coord_3d = np.median(pc, axis = 0)
             up_3d = [coord_3d[0], coord_3d[1], np.percentile(pc[:,2], 95)]
@@ -119,12 +120,14 @@ class YoloDetector():
             #                                     int(box[1] + box[3])//2))
             # up_3d = self._2dto3d.pixelTo3DPoint(int(box[0] + box[2])//2 + w*.25,
             #                                     int(box[1] + box[3])//2 + h *.25)
-            print(coord_3d)
+            print("here", coord_3d)
             if coord_3d[0] > 99:
                 continue
             else:
-                return coord_3d, up_3d
-        return None,None
+                c.append(coord_3d)
+                print(c)
+                u.append(up_3d)
+        return c, u
 
     def clicked(self, x, y):
         # print(x, y)
