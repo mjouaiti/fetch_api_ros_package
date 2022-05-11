@@ -70,7 +70,8 @@ class ArmControl(object):
     def move_joint_positions(self, positions, blocking=True):
         self.pause[0] = False
         while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, positions, 0.02, wait=blocking, {max_velocity_scaling_factor:0.5})
+            # result = self.move_group.moveToJointPosition(self.joint_names, positions,{'max_velocity_scaling_factor':0.5},wait=blocking)
+            result = self.move_group.moveToJointPosition(self.joint_names, positions,wait=blocking, max_velocity_scaling_factor=0.5)
             if s:
                 s.send(",".join([str(d) for d in list(self.get_pose())]))
             if result.error_code.val == MoveItErrorCodes.SUCCESS:
@@ -83,7 +84,8 @@ class ArmControl(object):
         positions = list(self.get_pose())
         positions[self.joint_names.index(joint_name)] = position
         while not rospy.is_shutdown():
-            result = self.move_group.moveToJointPosition(self.joint_names, positions, 0.02, wait=blocking, {max_velocity_scaling_factor:0.5})
+            # result = self.move_group.moveToJointPosition(self.joint_names, positions, {'max_velocity_scaling_factor':0.5},wait=blocking)
+            result = self.move_group.moveToJointPosition(self.joint_names, positions, wait=blocking, max_velocity_scaling_factor=0.5)
             if s:
                 s.send(",".join([str(d) for d in list(self.get_pose())]))
             if result.error_code.val == MoveItErrorCodes.SUCCESS:
@@ -139,22 +141,22 @@ class ArmControl(object):
 
     def tuck(self): # local method
         self.pause[0] = False
-        move_joint_positions([1.32, 1.40, -0.2, 1.72, 0.0, 1.66, 0.0])
+        self.move_joint_positions([1.32, 1.40, -0.2, 1.72, 0.0, 1.66, 0.0])
         self.pause[0] = True
 
     def zero(self):
         self.pause[0] = False
-        move_joint_positions(self.joint_names, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.move_joint_positions(self.joint_names, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.pause[0] = True
 
     def stow(self):
         self.pause[0] = False
-        move_joint_positions([1.32, 0.7, 0.0, -2.0, 0.0, -0.57, 0.0])
+        self.move_joint_positions([1.32, 0.7, 0.0, -2.0, 0.0, -0.57, 0.0])
         self.pause[0] = True
 
     def intermediate_stow(self):
         self.pause[0] = False
-        move_joint_positions(self.joint_names, [0.7, -0.3, 0.0, -0.3, 0.0, -0.57, 0.0])
+        self.move_joint_positions(self.joint_names, [0.7, -0.3, 0.0, -0.3, 0.0, -0.57, 0.0])
         self.pause[0] = True
 
     def get_pose(self):
@@ -183,8 +185,9 @@ if __name__ == '__main__':
     time.sleep(2.)
 
     arm_module.tuck()
+    torso.move_to(0.2)
 
-    arm_module.move_cartesian_position([0.5478926483367018, 0.16955347545496427, 0.5426119154023802])
+    # arm_module.move_cartesian_position([0.5478926483367018, 0.16955347545496427, 0.5426119154023802])
     #
     # pose = list(arm_module.get_pose())
     # pose[-2] += 0.5

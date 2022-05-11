@@ -116,12 +116,8 @@ class YoloDetector():
             pc = np.array(pc)
             coord_3d = np.median(pc, axis = 0)
             up_3d = [coord_3d[0], coord_3d[1], np.percentile(pc[:,2], 95)]
-            # print(self._2dto3d.pixelTo3DPoint(int(box[0] + box[2])//2,
-            #                                     int(box[1] + box[3])//2))
-            # up_3d = self._2dto3d.pixelTo3DPoint(int(box[0] + box[2])//2 + w*.25,
-            #                                     int(box[1] + box[3])//2 + h *.25)
             print("here", coord_3d)
-            if coord_3d[0] > 99:
+            if coord_3d[0] > .99:
                 continue
             else:
                 c.append(coord_3d)
