@@ -1,6 +1,7 @@
 import rospy
 from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
+import os
 
 
 class SpeechControl(object):
@@ -13,8 +14,13 @@ class SpeechControl(object):
     def say(self, sentence, voice = 'voice_rab_diphone', volume=1.0):
         #voice = 'voice_ked_diphone', 'voice_rab_diphone', 'voice_kal_diphone', 'voice_don_diphone'
         self.soundhandle.say(sentence, voice, volume)
+    def play(self, path):
+        self.soundhandle.playWave(path)
 
 if __name__ == '__main__':
     rospy.init_node("test_speech", anonymous=True)
     speech_module = SpeechControl()
-    speech_module.say("Hello, I am Fetch, your butler for the day. How may I help you?")
+    # speech_module.say("Hello, I am Fetch, your butler for the day. How may I help you?")
+    sound='/home/fetch_admin/sounds/confirmation.wav'
+    print(sound)
+    speech_module.play(sound)

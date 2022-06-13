@@ -111,9 +111,9 @@ class HeadControl(object):
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
 
-    def move_down_center(self, offset=0.5):
-        self.get_pose()
-        self.move_head(0.0, self.actual_positions[1]+abs(offset), rospy.Time(.4))
+    # def move_down_center(self, offset=0.5):
+    #     self.get_pose()
+    #     self.move_head(0.0, self.actual_positions[1]+abs(offset), rospy.Time(.4))
 
     def move_left_45(self):
         self.get_pose()

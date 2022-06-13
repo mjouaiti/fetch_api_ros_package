@@ -5,6 +5,8 @@ from torso_control import TorsoControl
 from base_control import BaseControl
 from head_control import HeadControl
 from arm_control import ArmControl
+from numpy import pi
+from scene import *
 #from perception import Perception
 
 import moveit_commander
@@ -13,7 +15,7 @@ import rospy
 class Robot():
 
     def __init__(self):
-        self. = moveit_commander.RobotCommander()
+        self.robot = moveit_commander.RobotCommander()
         self.gripper = GripperControl()
         self.speaker = SpeechControl()
         self.rgbCamera = RGBCamera()
@@ -22,7 +24,7 @@ class Robot():
         self.base = BaseControl()
         self.head = HeadControl()
         self.arm = ArmControl()
-        self.scene = Scene()
+        self.scene = Scene(PERCEPTION_MODE)
         rospy.loginfo("Robot initialised!")
 
     def getRobotState(self):
@@ -31,28 +33,39 @@ class Robot():
     def getBasePosition(self):
         return self.base.get_pose()
 
-    def goto(self, x, y, theta ):
-        self.base.goto(x, y, theta, "map")
+    def goto(self, x, y, theta=None, quaternions=[0,0]):
+        self.base.goto(x, y, theta=theta, frame="map", quaternions=quaternions)
 
     def getRGBImage(self):
         return self.rgbCamera.curr_image
 
     def getDetectionImage(self):
         return self.yoloDetector.detection_image
-        
+
     def vertical_pick(self, coord_3d):
         self.gripper.open()
-        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.3], [0, pi/2, 0])
-        time.sleep(2.0)
+        self.arm.move_cartesian_position([coord_3d[0]+0.01, coord_3d[1], coord_3d[2]+0.3], [0, pi/2-0.01, 0])
+        time.sleep(1.0)
 
-        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.2], [0, pi/2, 0])
-        time.sleep(2.0)
-        self.gripper.close(CLOSED_POS, 40)
+        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.2], [0, pi/2-0.01, 0])
+        time.sleep(1.0)
+        self.gripper.close(0, 40)
         time.sleep(2.0)#don't remove this sleep
         self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.5], [0, pi/4, 0]) #raise object from the table
-        time.sleep(2.0)
+        time.sleep(1.0)
         self.arm.stow()
-    
+        # self.gripper.open()
+        # self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.3], [0, pi/2, 0])
+        # time.sleep(2.0)
+        #
+        # self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.2], [0, pi/2, 0])
+        # time.sleep(2.0)
+        # self.gripper.close(0, 40)
+        # time.sleep(2.0)#don't remove this sleep
+        # self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.5], [0, pi/4, 0]) #raise object from the table
+        # time.sleep(2.0)
+        # self.arm.stow()
+
     def horizontal_pick(self, coord_3d):
         self.gripper.open()
         self.arm.move_cartesian_position([coord_3d[0] - 0.2, coord_3d[1], coord_3d[2] + 0.25], [0, 0, 0])
@@ -63,11 +76,11 @@ class Robot():
 
         self.arm.move_cartesian_position([coord_3d[0]-0.1, coord_3d[1], coord_3d[2]+.02], [0, 0, 0])
         time.sleep(2.0)
-        self.gripper.close(CLOSED_POS, 60)
+        self.gripper.close(0, 60)
         time.sleep(2.0)
-        
-         self.arm.stow()
-        
+
+        self.arm.stow()
+
     def horizontal_place(self, coord_3d):
         self.arm.move_cartesian_position([coord_3d[0] - 0.2, coord_3d[1], coord_3d[2] + 0.25], [0, 0, 0])
         time.sleep(2.0)
@@ -75,14 +88,16 @@ class Robot():
         self.arm.move_cartesian_position([coord_3d[0] - 0.2, coord_3d[1], coord_3d[2] + 0.04], [0, 0, 0])
         time.sleep(2.0)
         self.gripper.open()
-        
+
     def vertical_place(self, coord_3d):
-        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.3], [0, pi/2, 0])
+        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.3], [0, pi/2-0.01, 0])
         time.sleep(2.0)
 
-        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.2], [0, pi/2, 0])
+        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.2], [0, pi/2-0.01, 0])
         self.gripper.open()
-    
+        self.arm.move_cartesian_position([coord_3d[0]+.01, coord_3d[1], coord_3d[2] + 0.3], [0, pi/2-0.01, 0])
+        self.arm.stow()
+
 
 if __name__ == '__main__':
     rospy.init_node("robot")

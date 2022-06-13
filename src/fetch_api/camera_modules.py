@@ -99,7 +99,7 @@ class YoloDetector():
         else:
             return None,None,None
 
-    def get_item_3d_coordinates(self,i_name, rgb_img):
+    def get_item_3d_coordinates(self,i_name, rgb_img):#3d coordinates based on the base link
         c, u = [], []
         for k, [item_name, box] in enumerate(zip(self.class_names, self.boxes)):
             if not (i_name==item_name):
@@ -111,19 +111,68 @@ class YoloDetector():
             w, h = box[2] - box[0], box[3] - box[1]
             for pix in object_loc:
                 _c = self._2dto3d.pixelTo3DPoint(pix[1], pix[0])
+                # temp=np.array(_c)
+                # print(temp.shape)
                 if _c:
                     pc.append(_c)
             pc = np.array(pc)
             coord_3d = np.median(pc, axis = 0)
             up_3d = [coord_3d[0], coord_3d[1], np.percentile(pc[:,2], 95)]
-            print("here", coord_3d)
-            if coord_3d[0] > .99:
-                continue
-            else:
-                c.append(coord_3d)
-                print(c)
-                u.append(up_3d)
+            # print("here", coord_3d)# debug message
+            # if coord_3d[0] > 1.99:
+            #     continue
+            # else:
+            #     c.append(coord_3d)
+            #     print(c)
+            #     u.append(up_3d)
+            c.append(coord_3d)
+            # print(c) # debug message
+            u.append(up_3d)
+            # print(i_name)
+            # print(c)
         return c, u
+
+    def get_item_3d_coordinates_cam_map(self,i_name, rgb_img):#3d coordinates based on the camera frame and the map frame
+        c, u = [], []
+        for k, [item_name, box] in enumerate(zip(self.class_names, self.boxes)):
+            if not (i_name==item_name):
+                continue
+
+            mask = segmentation(rgb_img, box)
+            pc = []
+            pc2 = []
+            object_loc = np.argwhere(mask[:,:,0] > 0)
+            w, h = box[2] - box[0], box[3] - box[1]
+            for pix in object_loc:
+                temp=self._2dto3d.pixelTo3DPointCamMap(pix[1], pix[0])
+                # temp=np.array(temp)
+                # print(temp.shape)
+                if temp!=None:
+                    _c = temp[0]#cam
+                    _c2 = temp[1]#map
+                # print(_c.shape)
+                pc.append(_c)
+                pc2.append(_c)
+            pc = np.array(pc)
+            pc2 = np.array(pc2)
+            coord_3d_cam = np.median(pc, axis = 0)
+            coord_3d_map = np.median(pc2, axis = 0)
+            # up_3d = [coord_3d[0], coord_3d[1], np.percentile(pc[:,2], 95)]
+            # print("here", coord_3d_cam)
+            c.append(coord_3d_cam)
+            # print(c) # debug message
+            u.append(coord_3d_map)
+            # if coord_3d[0] > 1.99:
+            #     continue
+            # else:
+            #     c.append(coord_3d_cam)
+            #     print(c)
+            #     u.append(coord_3d_map)
+                #object coordinates camera frame, map frame
+                #c is the object coordinates in the camera frame
+                #u is the object corrdinates in the  map frame
+        return c, u
+
 
     def clicked(self, x, y):
         # print(x, y)
@@ -197,6 +246,11 @@ class Get3Dcoordinates(object):
     def callback(self, msg):
         self.cloud = msg
 
+        self.trans_rgb_map = self.tf_buffer.lookup_transform("map", msg.header.frame_id,
+                                                              # msg.header.stamp,
+                                                              rospy.Time(0),
+                                                              rospy.Duration(1.0))
+
         self.trans = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id,
                                            #msg.header.stamp,
                                            rospy.Time().now(),
@@ -221,9 +275,41 @@ class Get3Dcoordinates(object):
         rgbd_point.point.y = target_xyz_cam[0][1]
         rgbd_point.point.z = target_xyz_cam[0][2]
 
-        map_point = do_transform_point(rgbd_point, self.trans)
+        base_point = do_transform_point(rgbd_point, self.trans)
+        map_point = do_transform_point(rgbd_point, self.trans_rgb_map)
 
-        return [map_point.point.x, map_point.point.y, map_point.point.z]
+        # print("base frame object coordinate")
+        # print(base_point.point.x, base_point.point.y, base_point.point.z)
+        return [base_point.point.x, base_point.point.y, base_point.point.z]
+
+    ## transform 2D point into 3D coordinates in the "camera" frame and "map" frame
+    def pixelTo3DPointCamMap(self, u, v, cloud=None):
+        gen = pc2.read_points(self.cloud, field_names=("x", "y", "z"), skip_nans=True, uvs=[[int(u), int(v)]])
+        try:
+            target_xyz_cam = list(gen)
+        except:
+            return None
+
+        # do conversion to global coordinate here
+        rgbd_point = PointStamped()
+        rgbd_point.header.frame_id = "head_camera_rgb_optical_frame"
+        rgbd_point.header.stamp = rospy.Time(0)
+        try:
+            rgbd_point.point.x = target_xyz_cam[0][0]
+        except IndexError:
+            return None
+        rgbd_point.point.y = target_xyz_cam[0][1]
+        rgbd_point.point.z = target_xyz_cam[0][2]
+
+        map_point = do_transform_point(rgbd_point, self.trans_rgb_map)
+        # print("camera frame object coordinate")
+        # print(rgbd_point.point.x, rgbd_point.point.y, rgbd_point.point.z)
+        # print("map frame object coordinate")
+        # print(map_point.point.x, map_point.point.y, map_point.point.z)
+        # print([rgbd_point.point.x, rgbd_point.point.y, rgbd_point.point.z],[map_point.point.x, map_point.point.y, map_point.point.z])
+
+        # return rgbd_point, map_point
+        return [[rgbd_point.point.x, rgbd_point.point.y, rgbd_point.point.z],[map_point.point.x, map_point.point.y, map_point.point.z]]
 
 if __name__ == '__main__':
     rospy.init_node("test_cameras")

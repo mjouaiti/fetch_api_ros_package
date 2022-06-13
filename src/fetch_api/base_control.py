@@ -89,18 +89,23 @@ class BaseControl(object):
         self.client.wait_for_result()
 
     ##### Navigation
-    def goto(self, x, y, theta, frame="map"):
+    def goto(self, x, y, theta=None, frame="map", quaternions=[0,0]):
         move_goal = MoveBaseGoal()
         move_goal.target_pose.pose.position.x = x
         move_goal.target_pose.pose.position.y = y
-        move_goal.target_pose.pose.orientation.z = sin(theta/2.0)
-        move_goal.target_pose.pose.orientation.w = cos(theta/2.0)
+        if theta:
+            move_goal.target_pose.pose.orientation.z = sin(theta/2.0)
+            move_goal.target_pose.pose.orientation.w = cos(theta/2.0)
+        else:
+            move_goal.target_pose.pose.orientation.z = quaternions[0]
+            move_goal.target_pose.pose.orientation.w = quaternions[1]
         move_goal.target_pose.header.frame_id = frame
         move_goal.target_pose.header.stamp = rospy.Time.now()
         self.client.send_goal(move_goal)
         self.client.wait_for_result()
         if s:
             s.send(",".join([str(d) for d in list(self.get_pose())]))
+
 
     def goto_relative(self, dx, dy, dtheta, frame="map"):
         move_goal = MoveBaseGoal()
@@ -118,12 +123,12 @@ class BaseControl(object):
 if __name__ == '__main__':
     rospy.init_node("test_base")
     base_control = BaseControl()
-    
-    base_control.goto([-3.686,-2.244,1.566])
+
+    base_control.goto(-2.19,-1.75, .2)
     time.sleep(2)
-    
-    for i in range(0,10):
-        base_control.move_forward()
+
+    # for i in range(0,10):
+    #     base_control.move_forward()
 
     # base_control.move_right(45)
     #base_control.move_forward(1.0)

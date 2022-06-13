@@ -24,8 +24,6 @@ class Scene():
         self.scene.addCube("my_back_ground", 2, -1.2, 0.0, -1.0)
         self.scene.addCube("my_left_ground", 2, 0.0, 1.2, -1.0)
         self.scene.addCube("my_right_ground", 2, 0.0, -1.2, -1.0)
-        self.head_control = HeadControl()
-        self.torso_control = TorsoControl()
 
         self.perception_results = None
         find_topic = "basic_grasping_perception/find_objects"
@@ -61,8 +59,9 @@ class Scene():
             self.scene.addCube("my_back_ground", 2, -1.2, 0.0, -1.0)
             self.scene.addCube("my_left_ground", 2, 0.0, 1.2, -1.0)
             self.scene.addCube("my_right_ground", 2, 0.0, -1.2, -1.0)
-            self.scene.addCube("my_base", 0.52, 0.02, 0., .1)
-            # self.scene.addCube("my_head", 0.29, 0.02, 0., 1.13 + torso_lift)
+            self.scene.addCube("my_base", 0.56, 0.02, 0., .1)
+            self.scene.addCube("my_torso", 0.4, -0.24, 0., .57)
+            self.scene.addCube("my_arm", 0.1, -0.01, 0., -0.1, frame_id="shoulder_pan_link")
             # self.scene.addCube("my_head", 0.29, 0.0, -0.05, -0.15, frame_id="head_camera_rgb_optical_frame")
 
             if self.mode == COLLISON_MODE:
@@ -79,10 +78,11 @@ class Scene():
             for obj in find_result.support_surfaces:
                 # extend surface to floor, and make wider since we have narrow field of view
                 height = obj.primitive_poses[0].position.z
-                obj.primitives[0].dimensions = [obj.primitives[0].dimensions[0],
-                                                1.5,  # wider
+                obj.primitives[0].dimensions = [obj.primitives[0].dimensions[0]+.5,
+                                                2.5,  # wider
                                                 obj.primitives[0].dimensions[2] + height]
-                obj.primitive_poses[0].position.z += -height/2.0
+                obj.primitive_poses[0].position.z += -height/2.0# + 0.01
+                # obj.primitive_poses[0].position.x += 0.2
                 obj.name = "surf_" + str(k)
                 self.scene.addSolidPrimitive(obj.name,
                                              obj.primitives[0],
@@ -99,15 +99,15 @@ class Scene():
         for name in self.scene.getKnownAttachedObjects():
             self.scene.removeAttachedObject(name, False)
 
-    def explore(self):
-        self.head_control.move_home()
-        for t_lift in [0.0, 0.05, 0.1, 0.15, 0.2]:
-            self.torso_control.move_to(t_lift)
-            self.head_control.move_down(.15)
-            self.head_control.move_left(.15)
-            self.head_control.move_right(.3)
-            self.head_control.move_left(.15)
-            time.sleep(0.1)
+    # def explore(self):
+    #     self.head_control.move_home()
+    #     for t_lift in [0.0, 0.05, 0.1, 0.15, 0.2]:
+    #         self.torso_control.move_to(t_lift)
+    #         self.head_control.move_down(.15)
+    #         self.head_control.move_left(.15)
+    #         self.head_control.move_right(.3)
+    #         self.head_control.move_left(.15)
+    #         time.sleep(0.1)
 
 if __name__ == '__main__':
     rospy.init_node("test_scene")
